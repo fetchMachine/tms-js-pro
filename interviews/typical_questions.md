@@ -6,7 +6,7 @@
 ### Typical quesiotns
 - Что такое евент луп / зачем нужен?
 - Макро и микро таски. В чем суть и в чем отличия.
-- Как ведет себя setTimeout c нулевой задержкой.
+- Как ведет себя setTimeout с нулевой задержкой.
 
 ### Useful Links
 - [Jake Archibald Talk](https://www.youtube.com/watch?v=cCOL7MC4Pl0&ab_channel=JSConf)
