@@ -1,0 +1,165 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>reveal.js</title>
+
+		<link rel="stylesheet" href="dist/reset.css">
+		<link rel="stylesheet" href="dist/reveal.css">
+		<link rel="stylesheet" href="dist/theme/black.css">
+
+		<!-- Theme used for syntax highlighted code -->
+		<link rel="stylesheet" href="plugin/highlight/monokai.css">
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section>React</section>
+				<section>
+					<ul>
+						<li>UI библиотека</li>
+						<li>Декларативный</li>
+						<li>Гибкий</li>
+					</ul>
+				</section>
+				<section>
+					<figure>
+						<p><img src="./imgs/trends.png"></p>
+						<figcaption>
+							<a href="https://www.npmtrends.com/@angular/core-vs-react-vs-vue">https://www.npmtrends.com/@angular/core-vs-react-vs-vue</a>
+						</figcaption>
+					 </figure>
+				</section>
+
+
+				<section>
+					<figure>
+						<figcaption>Основы:</figcaption>
+						<ul>
+							<li>JSX</li>
+							<li>Элементы</li>
+							<li>Компоненты</li>
+							<li>Условный рендер</li>
+							<li>Обработка событий</li>
+							<li>Рендер массивов</li>
+					</figure>
+				</section>
+
+				<section>
+					<section>
+						<h1>JSX</h1>
+						<span>html в JS / JS в html</span>
+					</section>
+
+					<section>
+						<img src="./imgs/jsx.png" />
+					</section>
+
+					<section>
+						<figure>
+							<p><img src="./imgs/element.png"></p>
+							<figcaption>
+								<span>Елемент - основной строительный блок</span>
+							</figcaption>
+						 </figure>
+					</section>
+
+					<section>
+						<figure>
+							<figcaption>Из елементов строялся компоненты</figcaption>
+							<ul>
+								<li>Название с большой буквы</li>
+								<li>Один единственный аргумент - props</li>
+								<li>Возвращает разметку</li>
+              </ul>
+						</figure>
+					</section>
+
+				</section>
+
+        <section>
+          <section>Компоненты</section>
+          <section>Это функция - у него есть аргументы, можно вызывать один из другого</section>
+          <section>
+            <img src="./imgs/props.png" />
+          </section>
+          <section>Классовые vs Функциональные компоненты</section>
+
+          <section><img src="./imgs/f1.png" /></section>
+          <section><img src="./imgs/c1.png" /></section>
+          <section><img src="./imgs/c2.png" /></section>
+          <section><img src="./imgs/handlers.png" /></section>
+        </section>
+
+				<section>
+					<section>
+						<figure>
+							<figcaption>Условный рендер</figcaption>
+							<ul>
+								<li>if / else</li>
+								<li>&&</li>
+								<li>Тернарный оператор</li>
+						</ul>
+						</figure>
+					</section>
+
+					<section>
+						<figure>
+							<p><img src="./imgs/if.png"></p>
+							<figcaption>
+								<span>if / else</span>
+							</figcaption>
+						 </figure>
+					</section>
+
+					<section>
+						<figure>
+							<p><img src="./imgs/and.png"></p>
+							<figcaption>
+								<span>&&</span>
+							</figcaption>
+						 </figure>
+					</section>
+
+
+					<section>
+						<figure>
+							<p><img src="./imgs/ter.png"></p>
+							<figcaption>
+								<span>Тернарный оператор</span>
+							</figcaption>
+						 </figure>
+					</section>
+				</section>
+
+        <section>
+          <section>Map</section>
+          <section>
+            <img src="./imgs/map.png"></p>
+          </section>
+          <section>
+            <span>Key - уникальный среди сосених элементов!</span>
+          </section>
+        </section>
+			</div>
+		</div>
+
+		<script src="dist/reveal.js"></script>
+		<script src="plugin/notes/notes.js"></script>
+		<script src="plugin/markdown/markdown.js"></script>
+		<script src="plugin/highlight/highlight.js"></script>
+		<script>
+			// More info about initialization & config:
+			// - https://revealjs.com/initialization/
+			// - https://revealjs.com/config/
+			Reveal.initialize({
+				hash: true,
+
+				// Learn about plugins: https://revealjs.com/plugins/
+				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ]
+			});
+		</script>
+	</body>
+</html>
