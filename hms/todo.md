@@ -17,4 +17,3 @@
 ### Полезные ссылки
 - [Документация - Основные понятия](https://ru.reactjs.org/docs/hello-world.html)
 - [Слайды - спулить и запустить index.html](https://github.com/fetchMachine/tms-js-pro/tree/main/32-react/reveal.js-master)
--
