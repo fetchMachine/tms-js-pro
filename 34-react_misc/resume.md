@@ -14,6 +14,7 @@ class ErrorBoundary extends React.Component {
     // начальное состояние - ошибки нет
     state = { isError: false };
 
+  // getDerivedStateFromError возвращает следующее значение state
   static getDerivedStateFromError(error) {
     // в случае если произошла ошибка - вешаем флаг в true
     return { isError: true };
