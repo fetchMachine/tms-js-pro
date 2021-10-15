@@ -1,4 +1,3 @@
-12-20
 ### Примитивы
 ```typescript
 let n: number = 5;
