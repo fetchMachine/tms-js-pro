@@ -168,8 +168,52 @@ const f2 = (b: boolean) => {}
 f2(n as boolean) // ошибка, т.к. мы не можем на уровне типов привести string | number к boolean. Т.е. as может приводить к одному типу из возможных, а не вообще к любому
 ```
 
-### Дженерики
-TBD
+### Дженерики - служат для отображения взаимосвязи 2+ типов
+```typescript
+// наиболее частый кейс, показываем взаимосвязь входящих параметров функции и возвращаемого результата
+const toArray = <T>(value: T): T[] = > [value];
+
+// res1 будет иметь тип number[], т.к. в качестве параметров передали number
+const res1 = toArray(2);
+// res2 будет иметь тип string[]
+const res2 = toArray('a');
+
+// Можем явно указать тип дженерика. Тут получим ошибку, т.к. мы явно указали, что хотим работать со строкой, а в качестве параметров передали number;
+const res3 = toArray<string>(2);
+
+// дженерики могут использованы с любым типом, например, с интерфейсами. Показываем взаимосвязь двух полей объекта.
+interface State<T> {
+    items: T[];
+    selectedItem: T;
+}
+```
+
+### Встроенные Дженерики
+```typescript
+interface Props {
+    label: string;
+    todos: { id: number; label: string }[]
+}
+
+interface State {
+    isModalVisible: boolean;
+}
+
+// типизируем функциональный React компонент
+const Component: React.FC<Props> = () => {}
+
+// типизируем классовый React компонент c пропсами и стейтом
+class Component extends React.Component<Props, State> {}
+
+// типизируем классовый React компонент стейтом и без пропсов
+class Component extends React.Component<{}, State> {}
+
+// типизируем html евенты. Можно смотреть требуемые типы через подсказки IDE при наведении на атрибуты html тега (onChange / onClick / onSubmit и тд)
+const onInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {}
+
+const onBtnClick = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>): void => {}
+```
+
 
 ### Обшая информация
 - TS всегда пытается выводить типы и если не может этого сделать, то выводит тип any. Это можно настроить в tsconfig.json опцией noImplicitAny (будет возникать ошибка TS в случае невозможности выведения типа). Без этой опции всегда проверяйте в IDE что вам возвращает функция, т.к. есть вероятность, что возвращается any и теряется вообще вся типизация, вы пишете ошибочный код, но TS вам это никак не подсвечивает из-за этих any.
