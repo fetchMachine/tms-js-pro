@@ -25,8 +25,8 @@ createServer({
     });
 
     this.patch("/todos/:id", (schema, request) => {
-      let newAttrs = JSON.parse(request.requestBody)
-      let id = request.params.id
+      const newAttrs = JSON.parse(request.requestBody)
+      const id = request.params.id
       const todo = schema.todos.find(id)
 
       return todo.update(newAttrs);
