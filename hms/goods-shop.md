@@ -18,7 +18,7 @@
     - Заменить тег <a> на компонент <Link /> в нашем <Menu /> (см п.2 резюме react-router)
 8. Подключить redux и перенести в его initialState popularCategories и categories из <MainPage />
     - [базовый пример](https://codesandbox.io/s/xenodochial-mendel-iwhpb)
-    - устанить библиотеки redux и react-redux
+    - Установить библиотеки redux и react-redux
     - создать редюсер возвращающий initialState ```const initialState = { popularCategories, categories }``` (см src/store/reducer примера)
     - создать стору (createStore) используя редюсер и обернуть все приложение в провайдер используя наш стору ```<Provider store={store}><App /></Provider> ``` (см src/index примера)
     - Написать селекторы для получения popularCategories и categories соответвующих данных из сторы (см src/store/selectors примера)
