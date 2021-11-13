@@ -91,8 +91,10 @@ const App = () => {
         </Switch>
     )
 }
+```
 
 3в. Реалзиация пункта 3б в новой версии (шестой) react-router-dom (используется Routes вместо Switch и пропс element)
+```javascript
 import { Routes, Route } from "react-router-dom";
 
 const App = () => {
