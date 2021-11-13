@@ -64,7 +64,7 @@ const App = () => {
 }
 ```
 
-Но т.к. мы говорим про роутинг наш условный рендер будет связан с проверкой того, на какой странице находится пользователь. Для упрощения синтаксиса таких проверок можно и нужно использовать комопнент ```<Route />```
+3б. Но т.к. мы говорим про роутинг наш условный рендер будет связан с проверкой того, на какой странице находится пользователь. Для упрощения синтаксиса таких проверок можно и нужно использовать комопнент ```<Route />```
 ```javascript
 import { Switch, Route } from 'react-router-dom';
 
@@ -89,6 +89,19 @@ const App = () => {
             // т.е. если ни один из роутов выше про подойте, мы вывдоим страницу <NotFoundPage />
             <NotFoundPage />
         </Switch>
+    )
+}
+
+3в. Реалзиация пункта 3б в новой версии (шестой) react-router-dom (используется Routes вместо Switch и пропс element)
+import { Routes, Route } from "react-router-dom";
+
+const App = () => {
+    return (
+     <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/" element={<NotFoundPage />} />
+    </Routes>
     )
 }
 ```
