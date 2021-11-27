@@ -45,7 +45,15 @@ createServer({
   routes() {
     this.namespace = "api"
 
-    this.get("/categories", (schema) => schema.categories.all());
+    this.get("/categories", (schema, request) => {
+      const { ids } = request.queryParams;
+
+      const idsArray = ids?.split(',');
+
+      return schema.categories.where((category) => {
+        return idsArray?.includes(category.id) ?? true
+      });
+    });
 
     this.get('/popular_categories', (schema) => {
       const categories = schema.categories.all().models;
@@ -80,6 +88,7 @@ createServer({
       return [];
     });
 
+    // todo задержку для дизейбла кнопки
     this.put('/cart', () => {
       return new Response(405, {}, {errors: ['Метод в разработке']})
     });
