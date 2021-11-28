@@ -1,5 +1,5 @@
 ## Интеграция с бекендом
-0. установить miragejs и импортировать файл с сервером [server.js](https://github.com/fetchMachine/tms-js-pro/blob/main/hms/misc/server_shop.js) в src/index
+0. установить miragejs / faker / yup, скорпировать файл [server.js](https://github.com/fetchMachine/tms-js-pro/blob/main/hms/misc/server_shop.js) с моками бека  себе в проект и импортировать в src/index
 1. Создать класс, ответственный за коммуникацию с бекендом в src/api/Api. Класс должен содержать методы получения данных для каждого ендпоинта (делать fetch запрос, проверять на ok, делать, вызывать .json() и при необходимости трансформировать данные из структуры что отдал бекенд в удобную для вас структуру). Также тут создаем все интерфейсы и наши методы должны возвращать не any, а типизированные объекты
 ```javascript
 interface Good {

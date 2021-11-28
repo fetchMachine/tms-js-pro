@@ -1,5 +1,22 @@
 import { createServer, Model, belongsTo, Factory, Response } from "miragejs"
 import faker from 'faker';
+import * as yup from 'yup';
+
+const prodcutSchema = yup.object().shape({
+  categoryTypeId: yup.string().required(),
+  description: yup.string().required(),
+  id: yup.string().required(),
+  img: yup.string().required(),
+  label: yup.string().required(),
+  price: yup.string().required(),
+});
+
+const valdiateProduct = async (prodcut) => {
+  return prodcutSchema
+    .validate(prodcut, { abortEarly: false })
+    .then(() => [])
+    .catch(({ inner }) => inner.map((e) => e.message?.split(' at createError')[0] ?? e))
+}
 
 createServer({
   models: {
@@ -8,6 +25,8 @@ createServer({
     good: Model.extend({
       categoryType: belongsTo('category'),
     }),
+
+    cart: Model,
   },
 
   factories: {
@@ -84,13 +103,48 @@ createServer({
       };
     });
 
-    this.get('/cart', () => {
-      return [];
+    this.get('/cart', (schema) => {
+      return schema.carts.all();
     });
 
-    // todo задержку для дизейбла кнопки
-    this.put('/cart', () => {
-      return new Response(405, {}, {errors: ['Метод в разработке']})
-    });
+    this.put('/cart', async (schema, request) => {
+      try {
+        const prodcut = JSON.parse(request.requestBody) ?? {};
+
+        const errors = await valdiateProduct(prodcut);
+
+        if (errors.length) {
+          return new Response(400, {}, errors)
+        };
+
+        return schema.carts.findOrCreateBy(prodcut);
+      } catch {
+        return new Response(500)
+      }
+    }, { timing: 2000 });
+
+    this.delete('/cart', async (schema, request) => {
+      try {
+        const prodcut = JSON.parse(request.requestBody) ?? {};
+
+        const errors = await valdiateProduct(prodcut);
+
+        if (errors.length) {
+          return new Response(400, {}, errors)
+        };
+
+        const prodcutDb = schema.carts.findBy(prodcut);
+
+        if (!prodcutDb) {
+          return new Response(400, {}, 'Продукт не в корзине')
+        }
+
+        prodcutDb.destroy();
+
+        return new Response(200);
+      } catch {
+        return new Response(500);
+      }
+    }, { timing: 2000 });
   },
 })
