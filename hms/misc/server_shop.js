@@ -1,6 +1,7 @@
 import { createServer, Model, belongsTo, Factory, Response } from "miragejs"
 import faker from 'faker';
 import * as yup from 'yup';
+import orderBy from 'lodash.orderby';
 
 const prodcutSchema = yup.object().shape({
   categoryTypeId: yup.string().required(),
@@ -32,7 +33,7 @@ createServer({
   factories: {
     good: Factory.extend({
       label: () => faker.commerce.productName(),
-      price:  () => faker.commerce.price(1, 200),
+      price:  () => faker.commerce.price(1, 1000),
       description:  () => faker.commerce.productDescription(),
       img: 'https://source.unsplash.com/random',
     }),
@@ -85,21 +86,28 @@ createServer({
     });
 
     this.get("/goods", (schema, request) => {
-      const { ids, categoryTypeIds } = request.queryParams;
+      const { ids, categoryTypeIds, minPrice, maxPrice, text, limit = 20, offset = 0, sortBy, sortDirection = 'asc' } = request.queryParams;
 
       const idsArray = ids?.split(',');
       const categoryTypeIdsArray = categoryTypeIds?.split(',');
+      const minPriceValue = parseInt(minPrice, 10);
+      const maxPriceValue = parseInt(maxPrice, 10);
 
-      const items = schema.goods.where((good) => {
+      const filteredItems = schema.goods.where((good) => {
         const isIdMatch =  idsArray?.includes(good.id) ?? true
         const isTypeIdMatch =  categoryTypeIdsArray?.includes(good.categoryTypeId) ?? true
+        const isMinPriceMatch = Number.isNaN(minPriceValue) ? true : good.price >= minPriceValue;
+        const isMaxPriceMatch = Number.isNaN(maxPriceValue) ? true : good.price <= maxPriceValue;
+        const isTextMatch = text ? good.label.toLowerCase().includes(text.toLowerCase()) : true;
 
-        return isIdMatch && isTypeIdMatch;
-      });
+        return [isIdMatch, isTypeIdMatch, isMinPriceMatch, isMaxPriceMatch, isTextMatch].every(Boolean)
+      }).models;
+
+      const sortedItems = sortBy ? orderBy(filteredItems, [sortBy], [sortDirection]) : filteredItems;
 
       return {
-        items: items.models,
-        total: items.models.length,
+        items: sortedItems.slice(offset, limit),
+        total: sortedItems.length,
       };
     });
 
