@@ -106,7 +106,7 @@ createServer({
       const sortedItems = sortBy ? orderBy(filteredItems, [sortBy], [sortDirection]) : filteredItems;
 
       return {
-        items: sortedItems.slice(offset, limit),
+        items: sortedItems.slice(offset, offset + limit),
         total: sortedItems.length,
       };
     });
