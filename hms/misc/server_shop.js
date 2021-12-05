@@ -105,8 +105,11 @@ createServer({
 
       const sortedItems = sortBy ? orderBy(filteredItems, [sortBy], [sortDirection]) : filteredItems;
 
+      const offsetValue = parseInt(offset, 10);
+      const limitValue = parseInt(limit, 10);
+
       return {
-        items: sortedItems.slice(offset, offset + limit),
+        items: sortedItems.slice(offsetValue, offsetValue + limitValue),
         total: sortedItems.length,
       };
     });
