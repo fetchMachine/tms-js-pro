@@ -2,6 +2,8 @@ import { createServer, Model, belongsTo, Factory, Response } from "miragejs"
 import faker from 'faker';
 import * as yup from 'yup';
 import orderBy from 'lodash.orderby';
+import jwt from 'jsonwebtoken';
+
 
 const prodcutSchema = yup.object().shape({
   categoryTypeId: yup.string().required(),
@@ -12,11 +14,27 @@ const prodcutSchema = yup.object().shape({
   price: yup.string().required(),
 });
 
-const valdiateProduct = async (prodcut) => {
-  return prodcutSchema
-    .validate(prodcut, { abortEarly: false })
+const userCredentialsSchema = yup.object().shape({
+  login: yup.string().required(),
+  password: yup.string().required(),
+});
+
+const getValidator = (schema) => async (entity) => {
+  return schema
+    .validate(entity, { abortEarly: false })
     .then(() => [])
     .catch(({ inner }) => inner.map((e) => e.message?.split(' at createError')[0] ?? e))
+}
+
+const validateProduct = getValidator(prodcutSchema);
+const validateUserCredentials = getValidator(userCredentialsSchema);
+
+const JWT_SECRET = 'secret';
+const DEFAULT_HEADERS = {};
+
+const logBackendError = (e) => {
+  console.error('Ошибка в файле "server.js"');
+  console.log(e);
 }
 
 createServer({
@@ -28,6 +46,8 @@ createServer({
     }),
 
     cart: Model,
+
+    user: Model,
   },
 
   factories: {
@@ -59,6 +79,8 @@ createServer({
 
       server.createList("good", 20, { categoryTypeId: serverCategory.id });
     });
+
+    server.create('user', { login: 'admin', password: 'admin' });
   },
 
 
@@ -115,47 +137,111 @@ createServer({
     });
 
     this.get('/cart', (schema) => {
-      return schema.carts.all();
+      return schema.carts.all().models.map(({ productId, ...restGood }) => ({
+        ...restGood,
+        id: productId,
+      }));
     });
 
     this.put('/cart', async (schema, request) => {
-      try {
-        const prodcut = JSON.parse(request.requestBody) ?? {};
 
-        const errors = await valdiateProduct(prodcut);
+      try {
+        const token = request.requestHeaders.Authorization.split(' ')[1];
+        const credentials = jwt.verify(token, JWT_SECRET);
+
+        const user = schema.users.findBy({ login: credentials.login, password: credentials.password });
+
+        if (!user) {
+          return new Response(403);
+        }
+      } catch (e) {
+        logBackendError(e);
+        return new Response(403);
+      }
+
+      try {
+        const product = JSON.parse(request.requestBody) ?? {};
+
+        const errors = await validateProduct(product);
+
+        const cartProduct = { ...product, productId: product.id, id: undefined };
 
         if (errors.length) {
-          return new Response(400, {}, errors)
+          return new Response(400, DEFAULT_HEADERS, errors)
         };
 
-        return schema.carts.findOrCreateBy(prodcut);
-      } catch {
+        const goodInCart = schema.carts.where({ productId: product.id });
+
+        if (goodInCart && goodInCart.models.length) {
+          return new Response(404, DEFAULT_HEADERS, 'Продукт уже в корзине')
+        }
+
+        return schema.carts.create(cartProduct);
+      } catch (e) {
+        logBackendError(e);
         return new Response(500)
       }
     }, { timing: 2000 });
 
     this.delete('/cart', async (schema, request) => {
       try {
-        const prodcut = JSON.parse(request.requestBody) ?? {};
+        const product = JSON.parse(request.requestBody) ?? {};
 
-        const errors = await valdiateProduct(prodcut);
+        const errors = await validateProduct(product);
 
         if (errors.length) {
-          return new Response(400, {}, errors)
+          return new Response(400, DEFAULT_HEADERS, errors)
         };
 
-        const prodcutDb = schema.carts.findBy(prodcut);
+        const prodcutDb = schema.carts.where({ productId: product.id });
 
         if (!prodcutDb) {
-          return new Response(400, {}, 'Продукт не в корзине')
+          return new Response(400, DEFAULT_HEADERS, 'Продукт не в корзине')
         }
 
-        prodcutDb.destroy();
-
-        return new Response(200);
-      } catch {
+        return prodcutDb.destroy();
+      } catch(e) {
+        logBackendError(e);
         return new Response(500);
       }
     }, { timing: 2000 });
+
+    this.post('/login', async (schema, request) => {
+      const credentials = JSON.parse(request.requestBody) ?? {};
+      const errors = await validateUserCredentials(credentials);
+
+      if (errors.length) {
+        return new Response(400, DEFAULT_HEADERS, errors)
+      };
+
+      const user = schema.users.findBy(credentials);
+
+      if (!user) {
+        return new Response(404, DEFAULT_HEADERS, 'Пользователь не найден');
+      }
+
+      const { login, password } = user;
+
+      const token = jwt.sign({ login, password }, JWT_SECRET, { expiresIn: '24h' });
+
+      return new Response(200, DEFAULT_HEADERS, { login, token });
+    });
+
+    this.post('/registration', async (schema, request) => {
+      const credentials = JSON.parse(request.requestBody) ?? {};
+      const errors = await validateUserCredentials(credentials);
+
+      if (errors.length) {
+        return new Response(400, {}, errors)
+      };
+
+      const currentUser = schema.users.where({ login: credentials.login });
+
+      if (currentUser && currentUser.models.length) {
+        return new Response(404, DEFAULT_HEADERS, 'Такой пользователь уже существует');
+      }
+
+      return schema.users.create(credentials);
+    });
   },
 })
