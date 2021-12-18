@@ -33,8 +33,54 @@ const JWT_SECRET = 'secret';
 const DEFAULT_HEADERS = {};
 
 const logBackendError = (e) => {
-  console.error('Ошибка в файле "server.js"');
+  console.groupCollapsed('Ошибка в файле "server.js"');
   console.log(e);
+  console.groupEnd();
+}
+
+const RESPONSE_MESSAGES = {
+  INVALID_TOKEN: 'Данное действие не доступно текущему пользователю (проверьте токен)',
+  USER_NOT_FOUND: 'Пользователь не найден',
+  USER_ALREADY_EXISTS: 'Такой пользователь уже существует',
+  CART_PRODUCT_NOT_FOUND: 'Продукт не в корзине',
+  CART_PRODUCT_ALREADY_EXISTS: 'Продукт уже в корзине',
+}
+
+const RESPONSE_CODES = {
+  OK: 200,
+  BAD_REQUEST: 400,
+  FORBIDDEN: 403,
+  NOT_FOUND: 404,
+  INTERNAL_SERVER_ERROR: 500,
+};
+
+const APP_CONFIG = {
+  DEFAULT_RESPONSE_DELAY: 2000,
+  TOKEN_TTL: '24h',
+  USE_AUTH_CHECK: true,
+}
+
+const verifyRequest = (request, users) => {
+  if (!APP_CONFIG.USE_AUTH_CHECK) {
+    return;
+  }
+
+  try {
+    const token = (request.requestHeaders.Authorization || '').split(' ')[1];
+    const credentials = jwt.verify(token, JWT_SECRET);
+
+    const user = users.findBy({ login: credentials.login, password: credentials.password });
+
+    if (!user) {
+      return new Response(RESPONSE_CODES.FORBIDDEN, DEFAULT_HEADERS, RESPONSE_MESSAGES.INVALID_TOKEN);
+    }
+  } catch (e) {
+    if (e?.name !== 'JsonWebTokenError') {
+      logBackendError(e);
+    }
+
+    return new Response(RESPONSE_CODES.FORBIDDEN, DEFAULT_HEADERS, RESPONSE_MESSAGES.INVALID_TOKEN);
+  }
 }
 
 createServer({
@@ -136,27 +182,22 @@ createServer({
       };
     });
 
-    this.get('/cart', (schema) => {
-      return schema.carts.all().models.map(({ productId, ...restGood }) => ({
+    this.get('/cart', (schema, request) => {
+      const authError = verifyRequest(request, schema.users);
+      if (authError) {
+        return authError;
+      }
+
+      return schema.carts.all().models.map(({ attrs: { productId, ...restGood } }) => ({
         ...restGood,
         id: productId,
       }));
     });
 
     this.put('/cart', async (schema, request) => {
-
-      try {
-        const token = request.requestHeaders.Authorization.split(' ')[1];
-        const credentials = jwt.verify(token, JWT_SECRET);
-
-        const user = schema.users.findBy({ login: credentials.login, password: credentials.password });
-
-        if (!user) {
-          return new Response(403);
-        }
-      } catch (e) {
-        logBackendError(e);
-        return new Response(403);
+      const authError = verifyRequest(request, schema.users);
+      if (authError) {
+        return authError;
       }
 
       try {
@@ -164,67 +205,76 @@ createServer({
 
         const errors = await validateProduct(product);
 
-        const cartProduct = { ...product, productId: product.id, id: undefined };
+        const { id, ...productWithoutId } = product;
+        const cartProduct = { ...productWithoutId, productId: product.id };
 
         if (errors.length) {
-          return new Response(400, DEFAULT_HEADERS, errors)
+          return new Response(RESPONSE_CODES.BAD_REQUEST, DEFAULT_HEADERS, errors)
         };
 
         const goodInCart = schema.carts.where({ productId: product.id });
 
         if (goodInCart && goodInCart.models.length) {
-          return new Response(404, DEFAULT_HEADERS, 'Продукт уже в корзине')
+          return new Response(RESPONSE_CODES.BAD_REQUEST, DEFAULT_HEADERS, RESPONSE_MESSAGES.CART_PRODUCT_ALREADY_EXISTS)
         }
 
-        return schema.carts.create(cartProduct);
+        const { id: _, productId, ...restProduct } = schema.carts.create(cartProduct).attrs;
+        const createdProduct = { id: productId, ...restProduct }
+
+        return new Response(RESPONSE_CODES.OK, DEFAULT_HEADERS, createdProduct);
       } catch (e) {
         logBackendError(e);
-        return new Response(500)
+        return new Response(RESPONSE_CODES.INTERNAL_SERVER_ERROR)
       }
-    }, { timing: 2000 });
+    }, { timing: APP_CONFIG.DEFAULT_RESPONSE_DELAY });
 
     this.delete('/cart', async (schema, request) => {
+      const authError = verifyRequest(request, schema.users);
+      if (authError) {
+        return authError;
+      }
+
       try {
         const product = JSON.parse(request.requestBody) ?? {};
 
         const errors = await validateProduct(product);
 
         if (errors.length) {
-          return new Response(400, DEFAULT_HEADERS, errors)
+          return new Response(RESPONSE_CODES.BAD_REQUEST, DEFAULT_HEADERS, errors)
         };
 
         const prodcutDb = schema.carts.where({ productId: product.id });
 
         if (!prodcutDb) {
-          return new Response(400, DEFAULT_HEADERS, 'Продукт не в корзине')
+          return new Response(RESPONSE_CODES.BAD_REQUEST, DEFAULT_HEADERS, RESPONSE_MESSAGES.CART_PRODUCT_NOT_FOUND)
         }
 
         return prodcutDb.destroy();
       } catch(e) {
         logBackendError(e);
-        return new Response(500);
+        return new Response(RESPONSE_CODES.INTERNAL_SERVER_ERROR);
       }
-    }, { timing: 2000 });
+    }, { timing: APP_CONFIG.DEFAULT_RESPONSE_DELAY });
 
     this.post('/login', async (schema, request) => {
       const credentials = JSON.parse(request.requestBody) ?? {};
       const errors = await validateUserCredentials(credentials);
 
       if (errors.length) {
-        return new Response(400, DEFAULT_HEADERS, errors)
+        return new Response(RESPONSE_CODES.BAD_REQUEST, DEFAULT_HEADERS, errors)
       };
 
       const user = schema.users.findBy(credentials);
 
       if (!user) {
-        return new Response(404, DEFAULT_HEADERS, 'Пользователь не найден');
+        return new Response(RESPONSE_CODES.NOT_FOUND, DEFAULT_HEADERS, RESPONSE_MESSAGES.USER_NOT_FOUND);
       }
 
       const { login, password } = user;
 
-      const token = jwt.sign({ login, password }, JWT_SECRET, { expiresIn: '24h' });
+      const token = jwt.sign({ login, password }, JWT_SECRET, { expiresIn: APP_CONFIG.TOKEN_TTL });
 
-      return new Response(200, DEFAULT_HEADERS, { login, token });
+      return new Response(RESPONSE_CODES.OK, DEFAULT_HEADERS, { login, token });
     });
 
     this.post('/registration', async (schema, request) => {
@@ -232,13 +282,13 @@ createServer({
       const errors = await validateUserCredentials(credentials);
 
       if (errors.length) {
-        return new Response(400, {}, errors)
+        return new Response(RESPONSE_CODES.BAD_REQUEST, {}, errors)
       };
 
       const currentUser = schema.users.where({ login: credentials.login });
 
       if (currentUser && currentUser.models.length) {
-        return new Response(404, DEFAULT_HEADERS, 'Такой пользователь уже существует');
+        return new Response(RESPONSE_CODES.NOT_FOUND, DEFAULT_HEADERS, RESPONSE_MESSAGES.USER_ALREADY_EXISTS);
       }
 
       return schema.users.create(credentials);
