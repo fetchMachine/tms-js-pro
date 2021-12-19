@@ -58,9 +58,6 @@
 2. Показываем в дропдауне список из названий товаров, что отдал бек. При клике по товару - переходим на страницу товара.
 3. Если ничего не нашлось, то показываем в дропдауне сообщение "Ничего не найдено, попробуйте изменить запрос"
 
-## Тесты
-TBD
-
 ## Авторизационные токены
 0. Уставить jsonwebtoken и обновить файл сервера
 1. Создать отдельный слайс в редаксе, который будет хранить информацию о юзере (логин / токен / флаг isAuth - по умолчанию false).
@@ -75,6 +72,48 @@ TBD
 
 ## Административная страница добавления / редактирования / удаления товаров
 TBD
+
+## Прочее
+1. Написать минимум 5 тестов для Api. Проверять корректность составления квери параметров и урлов [пример на ts.](./misc/example.test.ts)
+2. Применить DI для наших санок.
+```typescript
+// пример создания
+const api = new Api();
+
+export const store = createStore(
+  reducer,
+  applyMiddleware(thunk.withExtraArgument(api))
+)
+
+// пример использования
+export const fetchCategories = (params:string) => async (dispatch: Dispatch, _getState: unknown, api: Api) => {
+  dispatch(getCategories());
+
+  api.getCategories(params)
+    .then((resp) => {
+        getCategoriesSuccess(resp)
+    })
+    .catch(() => {
+        dispatch(getCategoriesFailure())
+    });
+};
+```
+3. Перевести проект на webpack.
+    + Удалить из зависимостей react-scripts ```npm uninstall react-scripts```
+    + Отредактировать src/tsconfig.json, изменив noEmit на false ```"noEmit": false,```
+    + Отредактировать scripts в pacjakge.json
+    ```json
+        "scripts": {
+        "start": "webpack-dev-server",
+        "build": "webpack",
+        "test": "jest",
+        },
+    ```
+    + Установить необходимые зависимости ```npm i --save-dev webpack webpack-dev-server webpack-cli```
+    + Создаить файл с конфигами src/webpack.config.js и написать конфиги ([пример](./misc/webpack.config.js)).
+    + Удостовериться, что все компоненты находятся в tsx файлах.
+    + Установить зависимости, которые использовали в конфиге вебпака ```npm i --save-dev style-loader css-loader ts-loader html-webpack-plugin clean-webpack-plugin```
+    + Если из-за импортов НЕ js файлов возникают ошибки связанные с отсутсвием лоадеров - поставить необходимые лоадеры.
 
 ### Info
 asc - ascending - по возрастанию

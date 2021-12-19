@@ -4,6 +4,12 @@ import * as yup from 'yup';
 import orderBy from 'lodash.orderby';
 import jwt from 'jsonwebtoken';
 
+const APP_CONFIG = {
+  DEFAULT_RESPONSE_DELAY: 2000,
+  TOKEN_TTL: '24h',
+  USE_AUTH_CHECK: true,
+  LOG_BE_ERRORS: true,
+}
 
 const prodcutSchema = yup.object().shape({
   categoryTypeId: yup.string().required(),
@@ -32,12 +38,6 @@ const validateUserCredentials = getValidator(userCredentialsSchema);
 const JWT_SECRET = 'secret';
 const DEFAULT_HEADERS = {};
 
-const logBackendError = (e) => {
-  console.groupCollapsed('Ошибка в файле "server.js"');
-  console.log(e);
-  console.groupEnd();
-}
-
 const RESPONSE_MESSAGES = {
   INVALID_TOKEN: 'Данное действие не доступно текущему пользователю (проверьте токен)',
   USER_NOT_FOUND: 'Пользователь не найден',
@@ -54,10 +54,14 @@ const RESPONSE_CODES = {
   INTERNAL_SERVER_ERROR: 500,
 };
 
-const APP_CONFIG = {
-  DEFAULT_RESPONSE_DELAY: 2000,
-  TOKEN_TTL: '24h',
-  USE_AUTH_CHECK: true,
+const logBackendError = (e) => {
+  if (!APP_CONFIG.LOG_BE_ERRORS) {
+    return
+  };
+
+  console.groupCollapsed('Ошибка в файле "server.js"');
+  console.log(e);
+  console.groupEnd();
 }
 
 const verifyRequest = (request, users) => {
