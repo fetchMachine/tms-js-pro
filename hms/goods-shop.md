@@ -9,7 +9,7 @@
 5. Создать компонент <Footer /> с произвольным текстом внутри
 6. Создать компонент <MainPage />, который выводит все наши выше созданные компоненты (меню / категории товаров / футер) и прокидывает необходимые им пропсы
     - Прокидывает пункты меню в <Menu />
-    - Мапит популярные категории (создать самому согласно структуре popularCategories), прокидывая каждую категорию в <GoodCategory /> ``const popularCategories = [{ category:{ id: 1, type: 'house', label: 'Дом' }, items: [{ id: 1, category_type: 'house', label: 'Коврик', price: 99, img: 'https://source.unsplash.com/random'  }]  }]; ```
+    - Мапит популярные категории (создать самому согласно структуре popularCategories), прокидывая каждую категорию в <GoodCategory /> `const popularCategories = [{ category:{ id: 1, type: 'house', label: 'Дом' }, items: [{ id: 1, category_type: 'house', label: 'Коврик', price: 99, img: 'https://source.unsplash.com/random'  }]  }]; `
     - Для создания структуры разметки использовать компоненты Row и Col из antd (можно сначала написать на обычных дивах и потом перевести на antd)
 7. Подключить роутинг (выводит единственный компонент <MainPage /> для любого роута)
     - Установить react-router-dom
