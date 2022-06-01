@@ -7,7 +7,7 @@ import jwt from 'jsonwebtoken';
 const APP_CONFIG = {
   DEFAULT_RESPONSE_DELAY: 2000,
   TOKEN_TTL: '24h',
-  USE_AUTH_CHECK: true,
+  USE_AUTH_CHECK: false,
   LOG_BE_ERRORS: true,
 }
 
