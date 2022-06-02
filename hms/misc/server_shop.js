@@ -2,7 +2,7 @@ import { createServer, Model, belongsTo, Factory, Response } from "miragejs"
 import { faker } from '@faker-js/faker';
 import * as yup from 'yup';
 import orderBy from 'lodash.orderby';
-import jwt from 'jsonwebtoken';
+// import jwt from 'jsonwebtoken';
 
 const APP_CONFIG = {
   DEFAULT_RESPONSE_DELAY: 2000,
@@ -69,22 +69,22 @@ const verifyRequest = (request, users) => {
     return;
   }
 
-  try {
-    const token = (request.requestHeaders.Authorization || '').split(' ')[1];
-    const credentials = jwt.verify(token, JWT_SECRET);
+  // try {
+  //   const token = (request.requestHeaders.Authorization || '').split(' ')[1];
+  //   const credentials = jwt.verify(token, JWT_SECRET);
 
-    const user = users.findBy({ login: credentials.login, password: credentials.password });
+  //   const user = users.findBy({ login: credentials.login, password: credentials.password });
 
-    if (!user) {
-      return new Response(RESPONSE_CODES.FORBIDDEN, DEFAULT_HEADERS, RESPONSE_MESSAGES.INVALID_TOKEN);
-    }
-  } catch (e) {
-    if (e?.name !== 'JsonWebTokenError') {
-      logBackendError(e);
-    }
+  //   if (!user) {
+  //     return new Response(RESPONSE_CODES.FORBIDDEN, DEFAULT_HEADERS, RESPONSE_MESSAGES.INVALID_TOKEN);
+  //   }
+  // } catch (e) {
+  //   if (e?.name !== 'JsonWebTokenError') {
+  //     logBackendError(e);
+  //   }
 
-    return new Response(RESPONSE_CODES.FORBIDDEN, DEFAULT_HEADERS, RESPONSE_MESSAGES.INVALID_TOKEN);
-  }
+  //   return new Response(RESPONSE_CODES.FORBIDDEN, DEFAULT_HEADERS, RESPONSE_MESSAGES.INVALID_TOKEN);
+  // }
 }
 
 createServer({
@@ -260,26 +260,26 @@ createServer({
       }
     }, { timing: APP_CONFIG.DEFAULT_RESPONSE_DELAY });
 
-    this.post('/login', async (schema, request) => {
-      const credentials = JSON.parse(request.requestBody) ?? {};
-      const errors = await validateUserCredentials(credentials);
+    // this.post('/login', async (schema, request) => {
+    //   const credentials = JSON.parse(request.requestBody) ?? {};
+    //   const errors = await validateUserCredentials(credentials);
 
-      if (errors.length) {
-        return new Response(RESPONSE_CODES.BAD_REQUEST, DEFAULT_HEADERS, errors)
-      };
+    //   if (errors.length) {
+    //     return new Response(RESPONSE_CODES.BAD_REQUEST, DEFAULT_HEADERS, errors)
+    //   };
 
-      const user = schema.users.findBy(credentials);
+    //   const user = schema.users.findBy(credentials);
 
-      if (!user) {
-        return new Response(RESPONSE_CODES.NOT_FOUND, DEFAULT_HEADERS, RESPONSE_MESSAGES.USER_NOT_FOUND);
-      }
+    //   if (!user) {
+    //     return new Response(RESPONSE_CODES.NOT_FOUND, DEFAULT_HEADERS, RESPONSE_MESSAGES.USER_NOT_FOUND);
+    //   }
 
-      const { login, password } = user;
+    //   const { login, password } = user;
 
-      const token = jwt.sign({ login, password }, JWT_SECRET, { expiresIn: APP_CONFIG.TOKEN_TTL });
+    //   const token = jwt.sign({ login, password }, JWT_SECRET, { expiresIn: APP_CONFIG.TOKEN_TTL });
 
-      return new Response(RESPONSE_CODES.OK, DEFAULT_HEADERS, { login, token });
-    });
+    //   return new Response(RESPONSE_CODES.OK, DEFAULT_HEADERS, { login, token });
+    // });
 
     this.post('/registration', async (schema, request) => {
       const credentials = JSON.parse(request.requestBody) ?? {};
