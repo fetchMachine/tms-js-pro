@@ -1,5 +1,5 @@
 import { createServer, Model, belongsTo, Factory, Response } from "miragejs"
-import faker from 'faker';
+import { faker } from '@faker-js/faker';
 import * as yup from 'yup';
 import orderBy from 'lodash.orderby';
 import jwt from 'jsonwebtoken';
