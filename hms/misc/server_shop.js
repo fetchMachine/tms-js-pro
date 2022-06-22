@@ -284,7 +284,7 @@ createServer({
           console.log({ login, password })
           const token = await new jose.SignJWT({ login, password }).setProtectedHeader({ alg: 'HS256' }).setExpirationTime(APP_CONFIG.TOKEN_TTL).sign(await generateSecret());
 
-          return new Response(RESPONSE_CODES.OK, DEFAULT_HEADERS, { login, token });
+          return new Response(RESPONSE_CODES.OK, DEFAULT_HEADERS, { login, token, role: login === 'admin' ? 'admin' : 'user' });
         });
 
         this.post('/registration', async (schema, request) => {
