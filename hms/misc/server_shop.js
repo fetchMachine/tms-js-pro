@@ -5,19 +5,22 @@ import orderBy from 'lodash.orderby';
 import * as jose from 'jose'
 
 const APP_CONFIG = {
-    DEFAULT_RESPONSE_DELAY: 2000,
+    DEFAULT_RESPONSE_DELAY: 0,
     TOKEN_TTL: '24h',
     USE_AUTH_CHECK: false,
     LOG_BE_ERRORS: true,
 }
 
 const prodcutSchema = yup.object().shape({
-    categoryTypeId: yup.string().required(),
-    description: yup.string().required(),
-    id: yup.string().required(),
-    img: yup.string().required(),
-    label: yup.string().required(),
-    price: yup.string().required(),
+    good: yup.object().shape({
+        categoryTypeId: yup.string().required(),
+        description: yup.string().required(),
+        id: yup.string().required(),
+        img: yup.string().required(),
+        label: yup.string().required(),
+        price: yup.string().required(),
+    }),
+    count: yup.number().required().min(0).integer(),
 });
 
 const userCredentialsSchema = yup.object().shape({
@@ -74,22 +77,31 @@ const verifyRequest = async (request, users) => {
     }
 
     try {
-      const token = (request.requestHeaders.Authorization || '').split(' ')[1];
-      const credentials = await jose.jwtVerify(token, await generateSecret());
-    console.log({ credentials })
-      const user = users.findBy({ login: credentials.login, password: credentials.password });
+        const token = (request.requestHeaders.Authorization || '').split(' ')[1];
+        const credentials = await jose.jwtVerify(token, await generateSecret());
+        console.log({ credentials })
+        const user = users.findBy({ login: credentials.login, password: credentials.password });
 
-      if (!user) {
-        return new Response(RESPONSE_CODES.FORBIDDEN, DEFAULT_HEADERS, RESPONSE_MESSAGES.INVALID_TOKEN);
-      }
+        if (!user) {
+            return new Response(RESPONSE_CODES.FORBIDDEN, DEFAULT_HEADERS, RESPONSE_MESSAGES.INVALID_TOKEN);
+        }
     } catch (e) {
-      if (e?.name !== 'JsonWebTokenError') {
-        logBackendError(e);
-      }
+        if (e?.name !== 'JsonWebTokenError') {
+            logBackendError(e);
+        }
 
-      return new Response(RESPONSE_CODES.FORBIDDEN, DEFAULT_HEADERS, RESPONSE_MESSAGES.INVALID_TOKEN);
+        return new Response(RESPONSE_CODES.FORBIDDEN, DEFAULT_HEADERS, RESPONSE_MESSAGES.INVALID_TOKEN);
     }
 }
+
+const getCart = (schema) => {
+    return schema.carts.all().models
+        .filter(({ attrs: { count } }) => count)
+        .map(({ attrs: { productId, ...restGood } }) => ({
+        ...restGood,
+        id: productId,
+    }));
+};
 
 createServer({
     models: {
@@ -196,10 +208,7 @@ createServer({
                 return authError;
             }
 
-            return schema.carts.all().models.map(({ attrs: { productId, ...restGood } }) => ({
-                ...restGood,
-                id: productId,
-            }));
+            return getCart(schema)
         });
 
         this.put('/cart', async (schema, request) => {
@@ -213,78 +222,48 @@ createServer({
 
                 const errors = await validateProduct(product);
 
-                const { id, ...productWithoutId } = product;
-                const cartProduct = { ...productWithoutId, productId: product.id };
-
                 if (errors.length) {
                     return new Response(RESPONSE_CODES.BAD_REQUEST, DEFAULT_HEADERS, errors)
                 };
 
-                const goodInCart = schema.carts.where({ productId: product.id });
+                const goodInCart = schema.carts.where({ productId: product.good.id });
 
-                if (goodInCart && goodInCart.models.length) {
-                    return new Response(RESPONSE_CODES.BAD_REQUEST, DEFAULT_HEADERS, RESPONSE_MESSAGES.CART_PRODUCT_ALREADY_EXISTS)
+                if (!goodInCart || !goodInCart?.models?.length) {
+                    const { id, ...productWithoutId } = product;
+                    const cartProduct = { ...productWithoutId, productId: product.good.id };
+                    schema.carts.create(cartProduct);
+                } else {
+                    goodInCart.update('count', product.count)
                 }
 
-                const { id: _, productId, ...restProduct } = schema.carts.create(cartProduct).attrs;
-                const createdProduct = { id: productId, ...restProduct }
-
-                return new Response(RESPONSE_CODES.OK, DEFAULT_HEADERS, createdProduct);
+                return getCart(schema)
             } catch (e) {
                 logBackendError(e);
                 return new Response(RESPONSE_CODES.INTERNAL_SERVER_ERROR)
             }
         }, { timing: APP_CONFIG.DEFAULT_RESPONSE_DELAY });
 
-        this.delete('/cart', async (schema, request) => {
-            const authError = await verifyRequest(request, schema.users);
-            if (authError) {
-                return authError;
-            }
-
-            try {
-                const product = JSON.parse(request.requestBody) ?? {};
-
-                const errors = await validateProduct(product);
-
-                if (errors.length) {
-                    return new Response(RESPONSE_CODES.BAD_REQUEST, DEFAULT_HEADERS, errors)
-                };
-
-                const prodcutDb = schema.carts.where({ productId: product.id });
-
-                if (!prodcutDb) {
-                    return new Response(RESPONSE_CODES.BAD_REQUEST, DEFAULT_HEADERS, RESPONSE_MESSAGES.CART_PRODUCT_NOT_FOUND)
-                }
-
-                return prodcutDb.destroy();
-            } catch (e) {
-                logBackendError(e);
-                return new Response(RESPONSE_CODES.INTERNAL_SERVER_ERROR);
-            }
-        }, { timing: APP_CONFIG.DEFAULT_RESPONSE_DELAY });
-
         this.post('/login', async (schema, request) => {
-          const credentials = JSON.parse(request.requestBody) ?? {};
-          const errors = await validateUserCredentials(credentials);
+            const credentials = JSON.parse(request.requestBody) ?? {};
+            const errors = await validateUserCredentials(credentials);
 
-          if (errors.length) {
-            return new Response(RESPONSE_CODES.BAD_REQUEST, DEFAULT_HEADERS, errors)
-          };
+            if (errors.length) {
+                return new Response(RESPONSE_CODES.BAD_REQUEST, DEFAULT_HEADERS, errors)
+            };
 
-          const user = schema.users.findBy(credentials);
+            const user = schema.users.findBy(credentials);
 
-          if (!user) {
-            return new Response(RESPONSE_CODES.NOT_FOUND, DEFAULT_HEADERS, RESPONSE_MESSAGES.USER_NOT_FOUND);
-          }
+            if (!user) {
+                return new Response(RESPONSE_CODES.NOT_FOUND, DEFAULT_HEADERS, RESPONSE_MESSAGES.USER_NOT_FOUND);
+            }
 
-          const { login, password } = user;
+            const { login, password } = user;
 
-        //   const token = jwt.sign({ login, password }, JWT_SECRET, { expiresIn: APP_CONFIG.TOKEN_TTL });
-          console.log({ login, password })
-          const token = await new jose.SignJWT({ login, password }).setProtectedHeader({ alg: 'HS256' }).setExpirationTime(APP_CONFIG.TOKEN_TTL).sign(await generateSecret());
+            //   const token = jwt.sign({ login, password }, JWT_SECRET, { expiresIn: APP_CONFIG.TOKEN_TTL });
+            console.log({ login, password })
+            const token = await new jose.SignJWT({ login, password }).setProtectedHeader({ alg: 'HS256' }).setExpirationTime(APP_CONFIG.TOKEN_TTL).sign(await generateSecret());
 
-          return new Response(RESPONSE_CODES.OK, DEFAULT_HEADERS, { login, token, role: login === 'admin' ? 'admin' : 'user' });
+            return new Response(RESPONSE_CODES.OK, DEFAULT_HEADERS, { login, token });
         });
 
         this.post('/registration', async (schema, request) => {
